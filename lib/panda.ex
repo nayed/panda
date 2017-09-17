@@ -33,20 +33,30 @@ defmodule Panda do
   end
 
   def stats_match(id) do
-    fetching_teams = "#{@api_url}/matches/#{id}/teams?#{@token_part}"
-    |> HTTPoison.get
-    |> handle_response
+    key_id = id |> Integer.to_string |> String.to_atom
+    Supervisor.start_child(Panda.Supervisor, [key_id])
 
-    case fetching_teams do
-      {:ok, body, _headers} ->
-        [team_a, team_b] = Enum.map(body, fn(x) ->
-          %{"team_id" => x["id"], "team_name" => x["name"]}
-        end)
+    case Panda.Matches.pop(key_id) do
+      :error -> 
+        fetching_teams = "#{@api_url}/matches/#{id}/teams?#{@token_part}"
+        |> HTTPoison.get
+        |> handle_response
 
-        get_team_special_data(team_a, team_b)
+        case fetching_teams do
+          {:ok, body, _headers} ->
+            [team_a, team_b] = Enum.map(body, fn(x) ->
+              %{"team_id" => x["id"], "team_name" => x["name"]}
+            end)
 
-      {_, body, _headers} ->
-        body
+            data = get_team_special_data(team_a, team_b)
+            Panda.Matches.push(key_id, data)
+            data
+
+          {_, body, _headers} ->
+            body
+        end
+
+      {:ok, h} -> h
     end
   end
 

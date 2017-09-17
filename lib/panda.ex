@@ -32,7 +32,10 @@ defmodule Panda do
     {:error, body}
   end
 
-  def stats_match(id) do
+  @doc """
+  Get a match id and display their history record
+  """
+  def history_record(id) do
     key_id = id |> Integer.to_string |> String.to_atom
     Supervisor.start_child(Panda.Supervisor, [key_id])
 
@@ -62,7 +65,7 @@ defmodule Panda do
 
   def odds_for_match(id) do
     id
-    |> stats_match
+    |> history_record
     |> process_odds
   end
 
